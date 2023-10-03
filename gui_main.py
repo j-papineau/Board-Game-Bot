@@ -133,7 +133,7 @@ class Window(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     # oxygen, breeze, qtcurve, windows, fusion
-    app.setStyle('Breeze')
+    app.setStyle("Fusion")
     ex = Window()
     ex.show()
 
