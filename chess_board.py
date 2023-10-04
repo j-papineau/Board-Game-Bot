@@ -5,6 +5,7 @@ from matplotlib.pyplot import figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import matplotlib.image as image
 from PyQt6.QtGui import QImage, QPixmap
+from ultralytics import YOLO
 
 def order_points(pts):
         # initialzie a list of coordinates that will be ordered
@@ -109,3 +110,10 @@ def draw_grid(image, pts):
     plt.savefig("./generated/chessboard_transformed_with_grid.jpg", bbox_inches='tight')
     # return img
     return ptsT, ptsL
+
+def chess_pieces_detector(img):
+    model_trained = YOLO("models/best_transformed_detection.pt")
+    results = model_trained.predict(source=img, line_thickness=1, conf=0.5, augment=False, save_txt=True, save=True)
+
+    boxes = results[0].boxes
+    detections = boxes.xyxy.numpy()
