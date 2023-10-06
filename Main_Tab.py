@@ -78,23 +78,14 @@ class Main_Tab(QtWidgets.QWidget):
         self.layout.addLayout(self.calib_layout, 0, 1)
         
         self.show_board_layout = QFormLayout()
-        self.BoardLabel = QLabel("Board not calibrated yet :3")
-        self.show_board_label = QLabel("Board (after lots of math)")
-        self.show_board_label.setStyleSheet("font-size: 22px;")
-        self.show_board_layout.addWidget(self.show_board_label)
-        self.show_board_layout.addWidget(self.BoardLabel)
-        self.show_board_layout.setVerticalSpacing(10)
+        self.board_as_text = QTextEdit()
+        self.board_as_text.setMaximumWidth(600)
+        self.show_board_layout.addWidget(QLabel("Board as FEN Text"))
+        self.show_board_layout.addWidget(self.board_as_text)
         self.layout.addLayout(self.show_board_layout, 1, 0)
         
         self.digital_board_layout = QFormLayout()
         self.board = chess.Board()
-        
-        
-        
-        
-        
-        
-        
         
         self.confirm_calibration = QPushButton("Approve Calibration")
         self.confirm_calibration.setMinimumHeight(50)
@@ -119,7 +110,14 @@ class Main_Tab(QtWidgets.QWidget):
 
         self.layout.addWidget(self.start_btn, 2, 0)
         self.layout.addWidget(self.cancel_btn, 2, 1)
+        self.message = QLabel("System: ")
+        self.layout.addWidget(self.message, 2, 2)
         self.layout.addLayout(self.sidebar_layout, 0, 1)
+        
+        self.update_board_btn = QPushButton("Update Board Position")
+        self.layout.addWidget(self.update_board_btn, 3, 0) 
+        self.update_board_btn.clicked.connect(self.update_board_pos)
+        self.update_board_btn.setEnabled(False)
 
         self.camera = Camera_Thread()
         self.camera.ImageUpdate.connect(self.ImageUpdateSlot)
@@ -128,7 +126,6 @@ class Main_Tab(QtWidgets.QWidget):
 
         # bottom layout for output
         self.bottom_layout = QGridLayout()
-
 
         self.layout.addLayout(self.bottom_layout, 2, 0)
 
@@ -157,7 +154,8 @@ class Main_Tab(QtWidgets.QWidget):
         image = np.copy(self.raw_img)
         arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
         arucoParams = cv2.aruco.DetectorParameters()
-        (corners, ids, rejected) = cv2.aruco.detectMarkers(image, arucoDict, parameters=arucoParams)
+        detector = cv2.aruco.ArucoDetector(arucoDict, arucoParams)
+        (corners, ids, rejected) = detector.detectMarkers(image)
         
         if len(corners) > 0:
             
@@ -269,14 +267,25 @@ class Main_Tab(QtWidgets.QWidget):
         print("Parsing Board")
         self.ptsT, self.ptsL = draw_grid(self.calibration_image, self.pts)
         
-        img = QImage("./generated/chessboard_transformed_with_grid.jpg")
-        img = img.scaled(400, 400, Qt.AspectRatioMode.KeepAspectRatio)
-        self.BoardLabel.setPixmap(QPixmap.fromImage(img))
+        # img = QImage("./generated/chessboard_transformed_with_grid.jpg")
+        # img = img.scaled(400, 400, Qt.AspectRatioMode.KeepAspectRatio)
+        # self.BoardLabel.setPixmap(QPixmap.fromImage(img))
+        self.initial_pos = np.copy(self.calibration_image)
         
-        # display.start(self.board.board_fen())
-            
-        # self.ptsT, self.ptsL = draw_grid(self.calibration_image, self.pts)
-        # print(self.ptsT)                       
+        self.chess_board = Chess_Board(self.ptsT, self.ptsL, self.calibration_image)
+        self.update_board_btn.setEnabled(True)
+        
+    
+    def update_board_pos(self):
+        # print("updating board position...")
+        try:
+            img = np.copy(self.raw_img)
+            warped = four_point_transform(img, self.pts)
+            fen = self.chess_board.update_board_pos(warped)
+        except:
+            print("error updating board pos")
+        
+                             
       
                 
     
